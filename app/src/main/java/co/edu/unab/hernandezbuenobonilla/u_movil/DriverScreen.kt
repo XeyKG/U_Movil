@@ -1,4 +1,6 @@
 package co.edu.unab.hernandezbuenobonilla.u_movil
+
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,16 +10,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
-@Preview
 @Composable
-fun DriverScreen() {
+fun DriverScreen(navController: NavController) {
     var selectedVehicleType by remember { mutableStateOf("") }
     var marca by remember { mutableStateOf(TextFieldValue("")) }
     var modelo by remember { mutableStateOf(TextFieldValue("")) }
@@ -26,6 +29,8 @@ fun DriverScreen() {
 
     val vehicleOptions = listOf("Carro", "Moto")
     val context = LocalContext.current
+    val db = FirebaseFirestore.getInstance()
+    val user = FirebaseAuth.getInstance().currentUser
 
     Box(
         modifier = Modifier
@@ -38,6 +43,15 @@ fun DriverScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(32.dp)
         ) {
+            Text(
+                text = "Volver",
+                fontSize = 16.sp,
+                color = Color(0xFFAA7F4D),
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .clickable { navController.popBackStack() }
+            )
+
             Text(
                 text = "Registrar Vehículo",
                 fontSize = 28.sp,
@@ -63,7 +77,32 @@ fun DriverScreen() {
             BasicTextFieldWithLabel("Placa", placa) { placa = it }
 
             Button(
-                onClick = { /* Acción de guardar */ },
+                onClick = {
+                    if (user != null && selectedVehicleType.isNotEmpty() &&
+                        marca.text.isNotEmpty() && modelo.text.isNotEmpty() &&
+                        color.text.isNotEmpty() && placa.text.isNotEmpty()) {
+
+                        val vehicleData = hashMapOf(
+                            "userID" to user.uid,
+                            "vehicleType" to selectedVehicleType,
+                            "marca" to marca.text,
+                            "modelo" to modelo.text,
+                            "color" to color.text,
+                            "placa" to placa.text
+                        )
+
+                        db.collection("conductores").add(vehicleData)
+                            .addOnSuccessListener {
+                                Toast.makeText(context, "Datos guardados correctamente", Toast.LENGTH_SHORT).show()
+                                navController.navigate("createTrip")
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(context, "Error al guardar datos: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    } else {
+                        Toast.makeText(context, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),

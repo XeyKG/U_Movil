@@ -33,7 +33,10 @@ class MainActivity : ComponentActivity() {
                     RoleSelectionScreen(navController)
                 }
                 composable("driverScreen") {
-                    DriverScreen()
+                    DriverScreen(navController)
+                }
+                composable("createTrip") {
+                    CreateTripScreen(navController)
                 }
                 composable("passengerScreen") {
                     PassengerScreen()
